@@ -9,7 +9,7 @@ Code repository for the paper "Virtual avatar generation models as world navigat
       </a>
     </td>
     <td>
-      <a href="www.google.com">Project Page</a>
+      <a href="https://virtual-avatar-generation.github.io/">Project Page</a>
     </td>
   </tr>
 </table>
