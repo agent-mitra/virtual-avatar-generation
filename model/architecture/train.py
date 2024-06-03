@@ -327,8 +327,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ckpt-path", type=str, default=None)
-    parser.add_argument("--results-dir", type=str, default="/home/shadeform/virtual-avatar-generation/CLIMB/CLIMB_diffusion/results")
-    parser.add_argument("--epochs", type=int, default=2000)
+    parser.add_argument("--results-dir", type=str, default="/home/ubuntu/virtual-avatar-generation/CLIMB/CLIMB_diffusion/results") #modify this!
+    parser.add_argument("--epochs", type=int, default=1500)
     parser.add_argument("--global-batch-size", type=int, default=16)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")  # Choice doesn't affect training
