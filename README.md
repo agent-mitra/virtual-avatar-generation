@@ -4,7 +4,7 @@ Code repository for the paper "Virtual avatar generation models as world navigat
 <table>
   <tr>
     <td>
-      <a href="https://arxiv.org/abs/2112.04477">
+      <a href="https://virtual-avatar-generation.github.io/">
         <img src="https://img.shields.io/badge/arXiv-2112.04477-00ff00.svg" alt="arXiv">
       </a>
     </td>
@@ -97,7 +97,7 @@ This repo is licensed under the MIT License. The SMPL model is under a different
 
 ## SABR Platforms (Early Access)
 
-We’re planning on taking some of this foundational research and working with people to see what kinds of use cases might be actually useful to them - individual or enterprise.
+We’re planning on taking some of this foundational research and working with people to see what kinds of simulation tools oriented use cases might be useful to them - individual or enterprise.
 
 If you are interested in seeing applications of this simulation technology, you can fill this form out [here](https://docs.google.com/forms/d/e/1FAIpQLSeyUqgZ2683CStJkeR6_gP6uaM16QC9YrJKw7wRA1QzcYTvnA/viewform?usp=sf_link).
 
