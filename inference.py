@@ -449,41 +449,42 @@ class RunPipeline:
         torch.set_grad_enabled(False)
         
         ### RUN DIFFUSION INFERENCE (START)
-        if self.mode == "latent":
-            videoPklFile = joblib.load(f"{self.output_dir}/results/demo_{self.video_name}.pkl")
-            frameKeys = list(videoPklFile.keys()) #total number of frames
-            sample = defaultdict(dict)
+        #UNCOMMENT only if you want to do motion completion.
+        # if self.mode == "latent":
+        #     videoPklFile = joblib.load(f"{self.output_dir}/results/demo_{self.video_name}.pkl")
+        #     frameKeys = list(videoPklFile.keys()) #total number of frames
+        #     sample = defaultdict(dict)
         
-            zeros_tensor = torch.zeros(self.initLength)
+        #     zeros_tensor = torch.zeros(self.initLength)
             
-            ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['camera_bbox'][0]) for frame in frameKeys])
-            values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
-            sample['camera_3D'] = self.padTensor(values_to_concatenate)
-            del zeros_tensor, ones_tensor, values_to_concatenate           
+        #     ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['camera_bbox'][0]) for frame in frameKeys])
+        #     values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
+        #     sample['camera_3D'] = self.padTensor(values_to_concatenate)
+        #     del zeros_tensor, ones_tensor, values_to_concatenate           
             
-            zeros_tensor = torch.zeros(self.initLength, 4)
-            ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['bbox'][0]) for frame in frameKeys])  #mocap (PHALP) preds are in x0 y0 w h format (should be rendered in that format, too) so so is bbox.
-            values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
-            sample['person_bbox'] = self.padTensor(values_to_concatenate)
-            del zeros_tensor, ones_tensor, values_to_concatenate
+        #     zeros_tensor = torch.zeros(self.initLength, 4)
+        #     ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['bbox'][0]) for frame in frameKeys])  #mocap (PHALP) preds are in x0 y0 w h format (should be rendered in that format, too) so so is bbox.
+        #     values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
+        #     sample['person_bbox'] = self.padTensor(values_to_concatenate)
+        #     del zeros_tensor, ones_tensor, values_to_concatenate
             
-            zeros_tensor = torch.zeros(self.initLength, 1, 3, 3) 
-            ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['smpl'][0]['global_orient']) for frame in frameKeys])
-            values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
-            sample['smpl']['global_orient'] = self.padTensor(values_to_concatenate)
-            del zeros_tensor, ones_tensor, values_to_concatenate
+        #     zeros_tensor = torch.zeros(self.initLength, 1, 3, 3) 
+        #     ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['smpl'][0]['global_orient']) for frame in frameKeys])
+        #     values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
+        #     sample['smpl']['global_orient'] = self.padTensor(values_to_concatenate)
+        #     del zeros_tensor, ones_tensor, values_to_concatenate
             
-            zeros_tensor = torch.zeros(self.initLength, 23, 3, 3)
-            ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['smpl'][0]['body_pose']) for frame in frameKeys])
-            values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
-            sample['smpl']['body_pose'] = self.padTensor(values_to_concatenate)
-            del zeros_tensor, ones_tensor, values_to_concatenate
+        #     zeros_tensor = torch.zeros(self.initLength, 23, 3, 3)
+        #     ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['smpl'][0]['body_pose']) for frame in frameKeys])
+        #     values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
+        #     sample['smpl']['body_pose'] = self.padTensor(values_to_concatenate)
+        #     del zeros_tensor, ones_tensor, values_to_concatenate
             
-            zeros_tensor = torch.zeros(self.initLength, 10) 
-            ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['smpl'][0]['betas']) for frame in frameKeys])
-            values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
-            sample['smpl']['betas'] = self.padTensor(values_to_concatenate)
-            del zeros_tensor, ones_tensor, values_to_concatenate
+        #     zeros_tensor = torch.zeros(self.initLength, 10) 
+        #     ones_tensor = torch.stack([torch.tensor(videoPklFile[frame]['smpl'][0]['betas']) for frame in frameKeys])
+        #     values_to_concatenate = torch.cat([zeros_tensor, ones_tensor], dim=0)
+        #     sample['smpl']['betas'] = self.padTensor(values_to_concatenate)
+        #     del zeros_tensor, ones_tensor, values_to_concatenate
 
         model = DiT_action().to(self.device)
         self.checkpoint = torch.load(self.checkpoint, map_location=self.device)
@@ -492,14 +493,16 @@ class RunPipeline:
         model.eval()
         if self.mode == "latent":
             diffusion = create_diffusion(str(250), predict_xstart=True) #predict original latents
+            overwrite_first_24frames = None
+            #If you want to do motion completion, uncomment the below
             #START: CONDITION ON USER'S BODY SHAPE AND INITIAL POSES (makes predictions better and customized)
-            bbox = normalize_bboxes(sample['person_bbox'][:self.seqLen].unsqueeze(0), width, height)
-            pred_camera = sample['camera_3D'][:self.seqLen].unsqueeze(0)
-            final_body_pose = torch.cat((sample['smpl']['global_orient'][:self.seqLen], sample['smpl']['body_pose'][:self.seqLen]), dim=1) #(seqLen, 24, 3, 3)
-            pose_6d = matrix_to_rotation_6d(final_body_pose).reshape(self.seqLen, -1).unsqueeze(0)
-            betas = sample['smpl']['betas'][:self.seqLen].view(self.seqLen, -1).unsqueeze(0)
-            overwrite_first_24frames = torch.cat([bbox, pred_camera, pose_6d, betas], dim=-1).to(self.device)[:,:context_tensor.shape[0] + 24] #every video is 24 fps so 24 frames is 1 second + length of context.
-            overwrite_first_24frames = overwrite_first_24frames.permute(0,2,1).to(self.device) #optionally, can remove for general body parameters
+            # bbox = normalize_bboxes(sample['person_bbox'][:self.seqLen].unsqueeze(0), width, height)
+            # pred_camera = sample['camera_3D'][:self.seqLen].unsqueeze(0)
+            # final_body_pose = torch.cat((sample['smpl']['global_orient'][:self.seqLen], sample['smpl']['body_pose'][:self.seqLen]), dim=1) #(seqLen, 24, 3, 3)
+            # pose_6d = matrix_to_rotation_6d(final_body_pose).reshape(self.seqLen, -1).unsqueeze(0)
+            # betas = sample['smpl']['betas'][:self.seqLen].view(self.seqLen, -1).unsqueeze(0)
+            # overwrite_first_24frames = torch.cat([bbox, pred_camera, pose_6d, betas], dim=-1).to(self.device)[:,:context_tensor.shape[0] + 24] #every video is 24 fps so 24 frames is 1 second + length of context.
+            # overwrite_first_24frames = overwrite_first_24frames.permute(0,2,1).to(self.device) #optionally, can remove for general body parameters
             #END: CODE to CONDITION ON USER'S BODY SHAPE AND INITIAL POSES (makes predictions better and customized)
         else:
             diffusion = create_diffusion(str(250))
