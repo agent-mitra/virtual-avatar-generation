@@ -4,8 +4,8 @@ Code repository for the paper "Virtual avatar generation models as world navigat
 <table>
   <tr>
     <td>
-      <a href="https://virtual-avatar-generation.github.io/">
-        <img src="https://img.shields.io/badge/arXiv-2112.04477-00ff00.svg" alt="arXiv">
+      <a href="https://arxiv.org/abs/2406.01056">
+        <img src="https://img.shields.io/badge/arXiv-2406.0105-00ff00.svg" alt="arXiv">
       </a>
     </td>
     <td>
