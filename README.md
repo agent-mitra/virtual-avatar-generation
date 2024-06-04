@@ -88,7 +88,7 @@ If you are a researcher or part of a research organization and would like access
 
 ## © License
 
-This repo is licensed under the MIT License. The SMPL model is under a different license so please follow that.
+This repo is for research purposes only, NOT commercial. If you want to use this commercially, please contact the author for a separate license.
 
 ## 📱 Community
 
